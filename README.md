@@ -2,6 +2,8 @@
 
 用一个可版本控制的**内容包**，检查一个核心主题是否可以交给内容主理人做最终发布决定。它服务于“普通职场人用 AI 提升职业能力”为主、产品经理进阶为辅的公开个人 IP；系统只做准备度检查，不替主理人表达、互动或发布。
 
+想把检查器接入每周真实工作，请先读：[每周内容运营手册](docs/operations/weekly-content-operating-runbook.md) 和 [首周启动指南](docs/operations/first-week-launch.md)。四个可复制模板位于 [`templates/`](templates/)。
+
 ## 从起步包开始
 
 复制起步包，填入本周的一个核心主题：
