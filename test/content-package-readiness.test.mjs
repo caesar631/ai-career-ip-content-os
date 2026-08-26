@@ -1,5 +1,8 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
+import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import test from "node:test";
@@ -26,6 +29,20 @@ function runContentCheck(contentPackagePath) {
 function readReport(result) {
   assert.equal(result.status, 0, result.stderr);
   return JSON.parse(result.stdout.trim().split(/\r?\n/).at(-1));
+}
+
+async function runModifiedContentPackage(mutateContentPackage) {
+  const contentPackage = JSON.parse(await readFile(readyPackagePath, "utf8"));
+  mutateContentPackage(contentPackage);
+  const temporaryDirectory = await mkdtemp(join(tmpdir(), "content-package-readiness-"));
+  const temporaryPackagePath = join(temporaryDirectory, "content-package.json");
+
+  try {
+    await writeFile(temporaryPackagePath, JSON.stringify(contentPackage), "utf8");
+    return readReport(runContentCheck(temporaryPackagePath));
+  } finally {
+    await rm(temporaryDirectory, { force: true, recursive: true });
+  }
 }
 
 test("a complete approved content package reports ready", () => {
@@ -63,4 +80,49 @@ test("a package with an extra platform version is not reported ready", () => {
   const report = readReport(runContentCheck(duplicatePlatformVersionPackagePath));
 
   assert.notEqual(report.status, "ready");
+});
+
+test("each required content-package detail has an independent incomplete report", async (t) => {
+  const missingDetailCases = [
+    {
+      name: "career problem",
+      mutate: (contentPackage) => delete contentPackage.coreTheme.careerProblem,
+      missing: "coreTheme.careerProblem",
+    },
+    {
+      name: "demonstration",
+      mutate: (contentPackage) => delete contentPackage.coreTheme.demonstration,
+      missing: "coreTheme.demonstration",
+    },
+    {
+      name: "judgement",
+      mutate: (contentPackage) => delete contentPackage.coreTheme.judgement,
+      missing: "coreTheme.judgement",
+    },
+    ...["xiaohongshu", "douyin", "video-account", "bilibili"].map((platform) => ({
+      name: `${platform} platform version`,
+      mutate: (contentPackage) => {
+        contentPackage.platformVersions = contentPackage.platformVersions.filter(
+          (platformVersion) => platformVersion.platform !== platform,
+        );
+      },
+      missing: `platformVersions.${platform}`,
+    })),
+    {
+      name: "public basic asset",
+      mutate: (contentPackage) => {
+        contentPackage.basicAsset.visibility = "private";
+      },
+      missing: "basicAsset",
+    },
+  ];
+
+  for (const missingDetailCase of missingDetailCases) {
+    await t.test(missingDetailCase.name, async () => {
+      const report = await runModifiedContentPackage(missingDetailCase.mutate);
+
+      assert.equal(report.status, "incomplete");
+      assert.deepEqual(report.missing, [missingDetailCase.missing]);
+    });
+  }
 });

@@ -11,6 +11,10 @@ function getPlatformVersions(contentPackage) {
   return Array.isArray(contentPackage.platformVersions) ? contentPackage.platformVersions : [];
 }
 
+function hasPlatformVersion(platformVersions, platform) {
+  return platformVersions.some((platformVersion) => platformVersion.platform === platform);
+}
+
 function findMissingRequirements(contentPackage) {
   const missing = [];
   const coreTheme = contentPackage.coreTheme ?? {};
@@ -27,15 +31,15 @@ function findMissingRequirements(contentPackage) {
 
   const platformVersions = getPlatformVersions(contentPackage);
   const hasEveryRequiredPlatform = requiredPlatforms.every((platform) =>
-    platformVersions.some((platformVersion) => platformVersion.platform === platform),
+    hasPlatformVersion(platformVersions, platform),
   );
   for (const platform of requiredPlatforms) {
-    if (!platformVersions.some((platformVersion) => platformVersion.platform === platform)) {
+    if (!hasPlatformVersion(platformVersions, platform)) {
       missing.push(`platformVersions.${platform}`);
     }
   }
   if (hasEveryRequiredPlatform && platformVersions.length !== requiredPlatforms.length) {
-    missing.push("platformVersions.exact-set");
+    missing.push("platformVersions.required-set");
   }
 
   const hasPublicBasicAsset =
