@@ -141,6 +141,27 @@ test("a complete approved paid-video brief continues to normal readiness checks"
   });
 });
 
+test("a complete approved paid-video brief with approved platform versions reports ready", async () => {
+  const report = await runModifiedContentPackage((contentPackage) => {
+    contentPackage.paidVideoGenerationBrief = {
+      isRequired: true,
+      purpose: "Show a workflow outcome that cannot be captured in a screen recording.",
+      quantity: 1,
+      acceptanceCriteria: "The result makes the workflow decision observable.",
+      costEstimate: 80,
+      stopCondition: "Stop after one rejected result.",
+      paidVideoGenerationBriefApproval: "approved",
+    };
+  });
+
+  assert.deepEqual(report, {
+    status: "ready",
+    missing: [],
+    platformVersionsAwaitingReleaseApproval: [],
+    paidVideoGenerationBriefStatus: "approved",
+  });
+});
+
 test("a package missing required content is not reported ready", () => {
   const report = readReport(runContentCheck(incompletePackagePath));
 
