@@ -63,18 +63,9 @@ function findMissingRequirements(contentPackage) {
   return missing;
 }
 
-function isReadyContentPackage(contentPackage, missing) {
-  const platformVersions = getPlatformVersions(contentPackage);
-  const hasReleaseApprovalForRequiredPlatformVersionSet =
-    platformVersions.length === requiredPlatformVersionSet.length &&
-    requiredPlatformVersionSet.every((platform) =>
-      hasReleaseApprovalForPlatformVersion(platformVersions, platform),
-    );
-
-  return (
-    missing.length === 0 &&
-    hasReleaseApprovalForRequiredPlatformVersionSet &&
-    !contentPackage.paidVideoGenerationBrief?.isRequired
+function findPlatformVersionsAwaitingReleaseApproval(platformVersions) {
+  return requiredPlatformVersionSet.filter(
+    (platform) => !hasReleaseApprovalForPlatformVersion(platformVersions, platform),
   );
 }
 
@@ -85,13 +76,25 @@ if (!contentPackagePath) {
   try {
     const contentPackage = JSON.parse(await readFile(contentPackagePath, "utf8"));
     const missing = findMissingRequirements(contentPackage);
-    const isReady = isReadyContentPackage(contentPackage, missing);
+    const platformVersionsAwaitingReleaseApproval =
+      missing.length === 0
+        ? findPlatformVersionsAwaitingReleaseApproval(getPlatformVersions(contentPackage))
+        : [];
+    const paidVideoGenerationIsRequired = contentPackage.paidVideoGenerationBrief?.isRequired;
+    const status =
+      missing.length > 0
+        ? "incomplete"
+        : paidVideoGenerationIsRequired
+          ? "not-ready"
+          : platformVersionsAwaitingReleaseApproval.length > 0
+            ? "awaiting-owner-approval"
+            : "ready";
     console.log(
       JSON.stringify({
-        status: missing.length > 0 ? "incomplete" : isReady ? "ready" : "not-ready",
+        status,
         missing,
-        platformVersionsAwaitingReleaseApproval: [],
-        paidVideoGenerationBriefStatus: contentPackage.paidVideoGenerationBrief?.isRequired
+        platformVersionsAwaitingReleaseApproval,
+        paidVideoGenerationBriefStatus: paidVideoGenerationIsRequired
           ? "not-assessed"
           : "not-required",
       }),

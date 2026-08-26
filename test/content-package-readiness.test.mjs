@@ -59,6 +59,24 @@ test("a complete content package with release approvals reports ready", () => {
   });
 });
 
+test("a complete package with unapproved platform versions awaits owner approval", async () => {
+  const report = await runModifiedContentPackage((contentPackage) => {
+    contentPackage.platformVersions.find(
+      (platformVersion) => platformVersion.platform === "douyin",
+    ).releaseApproval = "pending";
+    contentPackage.platformVersions.find(
+      (platformVersion) => platformVersion.platform === "bilibili",
+    ).releaseApproval = "draft";
+  });
+
+  assert.deepEqual(report, {
+    status: "awaiting-owner-approval",
+    missing: [],
+    platformVersionsAwaitingReleaseApproval: ["douyin", "bilibili"],
+    paidVideoGenerationBriefStatus: "not-required",
+  });
+});
+
 test("a package missing required content is not reported ready", () => {
   const report = readReport(runContentCheck(incompletePackagePath));
 
