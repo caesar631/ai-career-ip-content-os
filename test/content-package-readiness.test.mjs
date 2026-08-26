@@ -42,7 +42,21 @@ test("a complete approved content package reports ready", () => {
 test("a package missing required content is not reported ready", () => {
   const report = readReport(runContentCheck(incompletePackagePath));
 
-  assert.notEqual(report.status, "ready");
+  assert.deepEqual(report, {
+    status: "incomplete",
+    missing: [
+      "coreTheme.careerProblem",
+      "coreTheme.demonstration",
+      "coreTheme.judgement",
+      "platformVersions.xiaohongshu",
+      "platformVersions.douyin",
+      "platformVersions.video-account",
+      "platformVersions.bilibili",
+      "basicAsset",
+    ],
+    platformVersionsAwaitingReleaseApproval: [],
+    paidVideoGenerationBriefStatus: "not-required",
+  });
 });
 
 test("a package with an extra platform version is not reported ready", () => {
