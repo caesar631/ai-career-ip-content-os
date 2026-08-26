@@ -1,0 +1,21 @@
+{
+  "coreTheme": {
+    "careerProblem": "",
+    "demonstration": "",
+    "judgement": ""
+  },
+  "platformVersions": [
+    { "platform": "xiaohongshu", "releaseApproval": "pending" },
+    { "platform": "douyin", "releaseApproval": "pending" },
+    { "platform": "video-account", "releaseApproval": "pending" },
+    { "platform": "bilibili", "releaseApproval": "pending" }
+  ],
+  "basicAsset": {
+    "name": "",
+    "visibility": "private",
+    "reference": ""
+  },
+  "paidVideoGenerationBrief": {
+    "isRequired": false
+  }
+}

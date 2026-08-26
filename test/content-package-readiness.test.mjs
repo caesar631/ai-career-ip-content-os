@@ -13,11 +13,20 @@ const readyPackagePath = fileURLToPath(
 const incompletePackagePath = fileURLToPath(
   new URL("../fixtures/incomplete-content-package.json", import.meta.url),
 );
+const awaitingOwnerApprovalPackagePath = fileURLToPath(
+  new URL("../fixtures/awaiting-owner-approval-content-package.json", import.meta.url),
+);
+const blockedByPaidVideoGatePackagePath = fileURLToPath(
+  new URL("../fixtures/blocked-by-paid-video-gate-content-package.json", import.meta.url),
+);
 const duplicatePlatformVersionPackagePath = fileURLToPath(
   new URL("../fixtures/duplicate-platform-version-content-package.json", import.meta.url),
 );
 const nullPlatformVersionPackagePath = fileURLToPath(
   new URL("../fixtures/null-platform-version-content-package.json", import.meta.url),
+);
+const starterContentPackagePath = fileURLToPath(
+  new URL("../templates/content-package-starter.json", import.meta.url),
 );
 const contentCheckPath = fileURLToPath(
   new URL("../bin/content-package-readiness.mjs", import.meta.url),
@@ -57,6 +66,37 @@ test("a complete content package with release approvals reports ready", () => {
     platformVersionsAwaitingReleaseApproval: [],
     paidVideoGenerationBriefStatus: "not-required",
   });
+});
+
+test("documented example packages run with their stated outcomes", async (t) => {
+  const documentedExampleCases = [
+    { name: "ready", path: readyPackagePath, status: "ready" },
+    { name: "incomplete", path: incompletePackagePath, status: "incomplete" },
+    {
+      name: "awaiting owner approval",
+      path: awaitingOwnerApprovalPackagePath,
+      status: "awaiting-owner-approval",
+    },
+    {
+      name: "blocked by paid-video gate",
+      path: blockedByPaidVideoGatePackagePath,
+      status: "blocked-by-paid-video-gate",
+    },
+  ];
+
+  for (const documentedExampleCase of documentedExampleCases) {
+    await t.test(documentedExampleCase.name, () => {
+      const report = readReport(runContentCheck(documentedExampleCase.path));
+
+      assert.equal(report.status, documentedExampleCase.status);
+    });
+  }
+});
+
+test("the copyable starter content package runs as incomplete", () => {
+  const report = readReport(runContentCheck(starterContentPackagePath));
+
+  assert.equal(report.status, "incomplete");
 });
 
 test("a complete package with unapproved platform versions awaits owner approval", async () => {
