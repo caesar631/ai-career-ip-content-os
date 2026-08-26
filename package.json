@@ -1,0 +1,13 @@
+{
+  "name": "ai-career-ip-content-os",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "content-package-readiness": "./bin/content-package-readiness.mjs"
+  },
+  "scripts": {
+    "content:check": "node bin/content-package-readiness.mjs",
+    "test": "node --test"
+  }
+}
