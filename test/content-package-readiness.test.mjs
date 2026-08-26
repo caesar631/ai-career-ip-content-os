@@ -105,7 +105,7 @@ test("a complete paid-video brief without owner approval remains blocked", async
       acceptanceCriteria: "The result makes the workflow decision observable.",
       costEstimate: 80,
       stopCondition: "Stop after one rejected result.",
-      ownerApproval: "pending",
+      paidVideoGenerationBriefApproval: "pending",
     };
   });
 
@@ -126,7 +126,7 @@ test("a complete approved paid-video brief continues to normal readiness checks"
       acceptanceCriteria: "The result makes the workflow decision observable.",
       costEstimate: 80,
       stopCondition: "Stop after one rejected result.",
-      ownerApproval: "approved",
+      paidVideoGenerationBriefApproval: "approved",
     };
     contentPackage.platformVersions.find(
       (platformVersion) => platformVersion.platform === "video-account",

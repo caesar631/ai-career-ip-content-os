@@ -103,7 +103,7 @@ function assessPaidVideoGenerationBrief(contentPackage) {
   return {
     missing: [],
     status:
-      paidVideoGenerationBrief.ownerApproval === "approved"
+      paidVideoGenerationBrief.paidVideoGenerationBriefApproval === "approved"
         ? "approved"
         : "awaiting-owner-approval",
   };
