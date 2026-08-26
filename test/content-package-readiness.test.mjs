@@ -34,8 +34,8 @@ test("a complete approved content package reports ready", () => {
   assert.deepEqual(report, {
     status: "ready",
     missing: [],
-    awaitingApprovalFor: [],
-    paidVideoGate: "not-required",
+    platformVersionsAwaitingReleaseApproval: [],
+    paidVideoGenerationBriefStatus: "not-required",
   });
 });
 

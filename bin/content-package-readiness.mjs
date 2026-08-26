@@ -45,8 +45,8 @@ if (!contentPackagePath) {
       JSON.stringify({
         status: isReady ? "ready" : "not-ready",
         missing: [],
-        awaitingApprovalFor: [],
-        paidVideoGate: contentPackage.paidVideoGenerationBrief?.isRequired
+        platformVersionsAwaitingReleaseApproval: [],
+        paidVideoGenerationBriefStatus: contentPackage.paidVideoGenerationBrief?.isRequired
           ? "not-assessed"
           : "not-required",
       }),
