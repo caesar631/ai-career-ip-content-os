@@ -48,7 +48,7 @@ Copy-Item templates/content-package-starter.json "content/$week/$topic/content-p
 
 ## 手动发布前：运行门槛检查
 
-在你把内容包的真实字段补齐并作出发布审批后运行：
+在你把内容包的真实字段补齐后，先运行预检：
 
 ```powershell
 npm run content:check -- content/2026-W35/<主题短名>/content-package.json
