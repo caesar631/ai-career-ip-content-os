@@ -240,29 +240,15 @@ test("a complete approved paid-video brief with approved platform versions repor
   });
 });
 
-test("a package missing required content is not reported ready", () => {
+test("a readable package missing a required content detail is not reported ready", () => {
   const report = readReport(runContentCheck(incompletePackagePath));
-  const missingContentPackageRequirements = [
-    "coreTheme.careerProblem",
-    "coreTheme.demonstration",
-    "coreTheme.judgement",
-    "platformVersions.xiaohongshu",
-    "platformVersions.douyin",
-    "platformVersions.video-account",
-    "platformVersions.bilibili",
-    "basicAsset",
-  ];
+  const missingContentPackageRequirements = ["coreTheme.demonstration"];
 
   assert.deepEqual(report, {
     status: "incomplete",
     missing: missingContentPackageRequirements,
     platformVersionsAwaitingReleaseApproval: [],
-    platformVersionStatuses: platformVersionStatuses({
-      xiaohongshu: "missing",
-      douyin: "missing",
-      "video-account": "missing",
-      bilibili: "missing",
-    }),
+    platformVersionStatuses: platformVersionStatuses(),
     paidVideoGenerationBriefStatus: "not-required",
     nextStep: {
       action: "complete-content-package",

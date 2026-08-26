@@ -1,1 +1,20 @@
-{}
+{
+  "coreTheme": {
+    "careerProblem": "How can a product manager turn repeated research into a reusable AI workflow?",
+    "judgement": "AI ability is proven by a reusable outcome, not by a prompt collection."
+  },
+  "platformVersions": [
+    { "platform": "xiaohongshu", "releaseApproval": "approved" },
+    { "platform": "douyin", "releaseApproval": "approved" },
+    { "platform": "video-account", "releaseApproval": "approved" },
+    { "platform": "bilibili", "releaseApproval": "approved" }
+  ],
+  "basicAsset": {
+    "name": "Research workflow starter",
+    "visibility": "public",
+    "reference": "https://github.com/caesar631/ai-career-ip-content-os"
+  },
+  "paidVideoGenerationBrief": {
+    "isRequired": false
+  }
+}
