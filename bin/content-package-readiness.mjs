@@ -67,10 +67,19 @@ function findMissingRequirements(contentPackage) {
   return missing;
 }
 
-function findPlatformVersionsAwaitingReleaseApproval(platformVersions) {
-  return requiredPlatformVersionSet.filter(
-    (platform) => !hasReleaseApprovalForPlatformVersion(platformVersions, platform),
-  );
+function getPlatformVersionStatuses(platformVersions) {
+  return requiredPlatformVersionSet.map((platform) => {
+    if (!hasPlatformVersionForPlatform(platformVersions, platform)) {
+      return { platform, status: "missing" };
+    }
+
+    return {
+      platform,
+      status: hasReleaseApprovalForPlatformVersion(platformVersions, platform)
+        ? "approved"
+        : "awaiting-release-approval",
+    };
+  });
 }
 
 function assessPaidVideoGenerationBrief(contentPackage) {
@@ -109,6 +118,42 @@ function assessPaidVideoGenerationBrief(contentPackage) {
   };
 }
 
+function getNextStep({
+  missingContentPackageRequirements,
+  paidVideoGenerationBrief,
+  platformVersionsAwaitingReleaseApproval,
+}) {
+  if (missingContentPackageRequirements.length > 0) {
+    return {
+      action: "complete-content-package",
+      items: missingContentPackageRequirements,
+    };
+  }
+
+  if (paidVideoGenerationBrief.status === "incomplete") {
+    return {
+      action: "complete-paid-video-generation-brief",
+      items: paidVideoGenerationBrief.missing,
+    };
+  }
+
+  if (paidVideoGenerationBrief.status === "awaiting-owner-approval") {
+    return {
+      action: "approve-paid-video-generation-brief",
+      items: ["paidVideoGenerationBrief.paidVideoGenerationBriefApproval"],
+    };
+  }
+
+  if (platformVersionsAwaitingReleaseApproval.length > 0) {
+    return {
+      action: "approve-platform-versions",
+      items: platformVersionsAwaitingReleaseApproval,
+    };
+  }
+
+  return { action: "ready-for-owner-release-decision", items: [] };
+}
+
 if (!contentPackagePath) {
   console.error("Provide a content package file path.");
   process.exitCode = 1;
@@ -121,10 +166,11 @@ if (!contentPackagePath) {
       ...missingContentPackageRequirements,
       ...paidVideoGenerationBrief.missing,
     ];
-    const platformVersionsAwaitingReleaseApproval =
-      missingContentPackageRequirements.length === 0
-        ? findPlatformVersionsAwaitingReleaseApproval(getPlatformVersions(contentPackage))
-        : [];
+    const platformVersions = getPlatformVersions(contentPackage);
+    const platformVersionStatuses = getPlatformVersionStatuses(platformVersions);
+    const platformVersionsAwaitingReleaseApproval = platformVersionStatuses
+      .filter((platformVersion) => platformVersion.status === "awaiting-release-approval")
+      .map((platformVersion) => platformVersion.platform);
     const status =
       missingContentPackageRequirements.length > 0
         ? "incomplete"
@@ -134,12 +180,19 @@ if (!contentPackagePath) {
           : platformVersionsAwaitingReleaseApproval.length > 0
             ? "awaiting-owner-approval"
             : "ready";
+    const nextStep = getNextStep({
+      missingContentPackageRequirements,
+      paidVideoGenerationBrief,
+      platformVersionsAwaitingReleaseApproval,
+    });
     console.log(
       JSON.stringify({
         status,
         missing,
         platformVersionsAwaitingReleaseApproval,
+        platformVersionStatuses,
         paidVideoGenerationBriefStatus: paidVideoGenerationBrief.status,
+        nextStep,
       }),
     );
   } catch (error) {

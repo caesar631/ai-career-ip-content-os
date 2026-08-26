@@ -48,6 +48,17 @@ npm run content:check -- my-content-package.json
 
 四个示例都由自动化测试执行，避免文档与实际输出脱节。
 
+## 怎样阅读检查报告
+
+报告先给出总 `status`，再给出 `missing`、`paidVideoGenerationBriefStatus` 和
+`platformVersionStatuses`。后者始终包含四个平台，每个状态为：
+
+- `missing`：该平台版本尚未登记；
+- `awaiting-release-approval`：已有平台版本，但仍需内容主理人做 `releaseApproval`；
+- `approved`：该平台版本已获发布审批。
+
+`nextStep` 只指出当前最高优先级的一步，可能是补全内容包、补全或审批付费视频简报、审批平台版本，或 `ready-for-owner-release-decision`。因此内容包即使有多个待办，也会先处理最阻塞发布的一类工作。
+
 ## 公开基础资产与未来会员资产
 
 首版只登记和检查公开的**基础资产**：模板、简版工作流、示例或复盘。完整 SOP、进阶工作流、成套模板和答疑属于未来的**会员资产**；本仓库不交付会员权益，也不包含支付、客服或社群功能。

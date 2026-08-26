@@ -43,6 +43,13 @@ function readReport(result) {
   return JSON.parse(result.stdout.trim().split(/\r?\n/).at(-1));
 }
 
+function platformVersionStatuses(statusesByPlatform = {}) {
+  return ["xiaohongshu", "douyin", "video-account", "bilibili"].map((platform) => ({
+    platform,
+    status: statusesByPlatform[platform] ?? "approved",
+  }));
+}
+
 async function runModifiedContentPackage(mutateContentPackage) {
   const contentPackage = JSON.parse(await readFile(readyPackagePath, "utf8"));
   mutateContentPackage(contentPackage);
@@ -64,7 +71,9 @@ test("a complete content package with release approvals reports ready", () => {
     status: "ready",
     missing: [],
     platformVersionsAwaitingReleaseApproval: [],
+    platformVersionStatuses: platformVersionStatuses(),
     paidVideoGenerationBriefStatus: "not-required",
+    nextStep: { action: "ready-for-owner-release-decision", items: [] },
   });
 });
 
@@ -113,7 +122,15 @@ test("a complete package with unapproved platform versions awaits owner approval
     status: "awaiting-owner-approval",
     missing: [],
     platformVersionsAwaitingReleaseApproval: ["douyin", "bilibili"],
+    platformVersionStatuses: platformVersionStatuses({
+      douyin: "awaiting-release-approval",
+      bilibili: "awaiting-release-approval",
+    }),
     paidVideoGenerationBriefStatus: "not-required",
+    nextStep: {
+      action: "approve-platform-versions",
+      items: ["douyin", "bilibili"],
+    },
   });
 });
 
@@ -122,17 +139,24 @@ test("a paid-video package without a complete brief is blocked and names the mis
     contentPackage.paidVideoGenerationBrief = { isRequired: true };
   });
 
+  const missingPaidVideoGenerationBriefFields = [
+    "paidVideoGenerationBrief.purpose",
+    "paidVideoGenerationBrief.quantity",
+    "paidVideoGenerationBrief.acceptanceCriteria",
+    "paidVideoGenerationBrief.costEstimate",
+    "paidVideoGenerationBrief.stopCondition",
+  ];
+
   assert.deepEqual(report, {
     status: "blocked-by-paid-video-gate",
-    missing: [
-      "paidVideoGenerationBrief.purpose",
-      "paidVideoGenerationBrief.quantity",
-      "paidVideoGenerationBrief.acceptanceCriteria",
-      "paidVideoGenerationBrief.costEstimate",
-      "paidVideoGenerationBrief.stopCondition",
-    ],
+    missing: missingPaidVideoGenerationBriefFields,
     platformVersionsAwaitingReleaseApproval: [],
+    platformVersionStatuses: platformVersionStatuses(),
     paidVideoGenerationBriefStatus: "incomplete",
+    nextStep: {
+      action: "complete-paid-video-generation-brief",
+      items: missingPaidVideoGenerationBriefFields,
+    },
   });
 });
 
@@ -153,7 +177,12 @@ test("a complete paid-video brief without owner approval remains blocked", async
     status: "blocked-by-paid-video-gate",
     missing: [],
     platformVersionsAwaitingReleaseApproval: [],
+    platformVersionStatuses: platformVersionStatuses(),
     paidVideoGenerationBriefStatus: "awaiting-owner-approval",
+    nextStep: {
+      action: "approve-paid-video-generation-brief",
+      items: ["paidVideoGenerationBrief.paidVideoGenerationBriefApproval"],
+    },
   });
 });
 
@@ -177,7 +206,14 @@ test("a complete approved paid-video brief continues to normal readiness checks"
     status: "awaiting-owner-approval",
     missing: [],
     platformVersionsAwaitingReleaseApproval: ["video-account"],
+    platformVersionStatuses: platformVersionStatuses({
+      "video-account": "awaiting-release-approval",
+    }),
     paidVideoGenerationBriefStatus: "approved",
+    nextStep: {
+      action: "approve-platform-versions",
+      items: ["video-account"],
+    },
   });
 });
 
@@ -198,27 +234,67 @@ test("a complete approved paid-video brief with approved platform versions repor
     status: "ready",
     missing: [],
     platformVersionsAwaitingReleaseApproval: [],
+    platformVersionStatuses: platformVersionStatuses(),
     paidVideoGenerationBriefStatus: "approved",
+    nextStep: { action: "ready-for-owner-release-decision", items: [] },
   });
 });
 
 test("a package missing required content is not reported ready", () => {
   const report = readReport(runContentCheck(incompletePackagePath));
+  const missingContentPackageRequirements = [
+    "coreTheme.careerProblem",
+    "coreTheme.demonstration",
+    "coreTheme.judgement",
+    "platformVersions.xiaohongshu",
+    "platformVersions.douyin",
+    "platformVersions.video-account",
+    "platformVersions.bilibili",
+    "basicAsset",
+  ];
 
   assert.deepEqual(report, {
     status: "incomplete",
-    missing: [
-      "coreTheme.careerProblem",
-      "coreTheme.demonstration",
-      "coreTheme.judgement",
-      "platformVersions.xiaohongshu",
-      "platformVersions.douyin",
-      "platformVersions.video-account",
-      "platformVersions.bilibili",
-      "basicAsset",
-    ],
+    missing: missingContentPackageRequirements,
     platformVersionsAwaitingReleaseApproval: [],
+    platformVersionStatuses: platformVersionStatuses({
+      xiaohongshu: "missing",
+      douyin: "missing",
+      "video-account": "missing",
+      bilibili: "missing",
+    }),
     paidVideoGenerationBriefStatus: "not-required",
+    nextStep: {
+      action: "complete-content-package",
+      items: missingContentPackageRequirements,
+    },
+  });
+});
+
+test("an incomplete package distinguishes missing and unapproved platform versions", async () => {
+  const report = await runModifiedContentPackage((contentPackage) => {
+    delete contentPackage.coreTheme.careerProblem;
+    contentPackage.platformVersions = contentPackage.platformVersions.filter(
+      (platformVersion) => platformVersion.platform !== "xiaohongshu",
+    );
+    contentPackage.platformVersions.find(
+      (platformVersion) => platformVersion.platform === "douyin",
+    ).releaseApproval = "pending";
+  });
+
+  assert.deepEqual(report, {
+    status: "incomplete",
+    missing: ["coreTheme.careerProblem", "platformVersions.xiaohongshu"],
+    platformVersionsAwaitingReleaseApproval: ["douyin"],
+    platformVersionStatuses: platformVersionStatuses({
+      xiaohongshu: "missing",
+      douyin: "awaiting-release-approval",
+    }),
+    paidVideoGenerationBriefStatus: "not-required",
+    nextStep: {
+      action: "complete-content-package",
+      items: ["coreTheme.careerProblem", "platformVersions.xiaohongshu"],
+    },
   });
 });
 
