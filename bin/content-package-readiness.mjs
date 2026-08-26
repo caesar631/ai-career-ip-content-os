@@ -1,7 +1,7 @@
 import { readFile } from "node:fs/promises";
 
 const contentPackagePath = process.argv[2];
-const requiredPlatforms = ["xiaohongshu", "douyin", "video-account", "bilibili"];
+const requiredPlatformVersionSet = ["xiaohongshu", "douyin", "video-account", "bilibili"];
 
 function hasText(value) {
   return typeof value === "string" && value.trim().length > 0;
@@ -11,8 +11,15 @@ function getPlatformVersions(contentPackage) {
   return Array.isArray(contentPackage.platformVersions) ? contentPackage.platformVersions : [];
 }
 
-function hasPlatformVersion(platformVersions, platform) {
-  return platformVersions.some((platformVersion) => platformVersion.platform === platform);
+function hasPlatformVersionForPlatform(platformVersions, platform) {
+  return platformVersions.some((platformVersion) => platformVersion?.platform === platform);
+}
+
+function hasReleaseApprovalForPlatformVersion(platformVersions, platform) {
+  return platformVersions.some(
+    (platformVersion) =>
+      platformVersion?.platform === platform && platformVersion.releaseApproval === "approved",
+  );
 }
 
 function findMissingRequirements(contentPackage) {
@@ -30,16 +37,19 @@ function findMissingRequirements(contentPackage) {
   }
 
   const platformVersions = getPlatformVersions(contentPackage);
-  const hasEveryRequiredPlatform = requiredPlatforms.every((platform) =>
-    hasPlatformVersion(platformVersions, platform),
+  const hasRequiredPlatformVersionSet = requiredPlatformVersionSet.every((platform) =>
+    hasPlatformVersionForPlatform(platformVersions, platform),
   );
-  for (const platform of requiredPlatforms) {
-    if (!hasPlatformVersion(platformVersions, platform)) {
+  for (const platform of requiredPlatformVersionSet) {
+    if (!hasPlatformVersionForPlatform(platformVersions, platform)) {
       missing.push(`platformVersions.${platform}`);
     }
   }
-  if (hasEveryRequiredPlatform && platformVersions.length !== requiredPlatforms.length) {
-    missing.push("platformVersions.required-set");
+  if (
+    hasRequiredPlatformVersionSet &&
+    platformVersions.length !== requiredPlatformVersionSet.length
+  ) {
+    missing.push("platformVersions.required-platform-version-set");
   }
 
   const hasPublicBasicAsset =
@@ -55,18 +65,15 @@ function findMissingRequirements(contentPackage) {
 
 function isReadyContentPackage(contentPackage, missing) {
   const platformVersions = getPlatformVersions(contentPackage);
-  const hasApprovedPlatformVersions =
-    platformVersions.length === requiredPlatforms.length &&
-    requiredPlatforms.every((platform) =>
-      platformVersions.some(
-        (platformVersion) =>
-          platformVersion.platform === platform && platformVersion.releaseApproval === "approved",
-      ),
+  const hasReleaseApprovalForRequiredPlatformVersionSet =
+    platformVersions.length === requiredPlatformVersionSet.length &&
+    requiredPlatformVersionSet.every((platform) =>
+      hasReleaseApprovalForPlatformVersion(platformVersions, platform),
     );
 
   return (
     missing.length === 0 &&
-    hasApprovedPlatformVersions &&
+    hasReleaseApprovalForRequiredPlatformVersionSet &&
     !contentPackage.paidVideoGenerationBrief?.isRequired
   );
 }

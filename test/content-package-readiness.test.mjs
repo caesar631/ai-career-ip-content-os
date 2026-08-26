@@ -16,6 +16,9 @@ const incompletePackagePath = fileURLToPath(
 const duplicatePlatformVersionPackagePath = fileURLToPath(
   new URL("../fixtures/duplicate-platform-version-content-package.json", import.meta.url),
 );
+const nullPlatformVersionPackagePath = fileURLToPath(
+  new URL("../fixtures/null-platform-version-content-package.json", import.meta.url),
+);
 const contentCheckPath = fileURLToPath(
   new URL("../bin/content-package-readiness.mjs", import.meta.url),
 );
@@ -45,7 +48,7 @@ async function runModifiedContentPackage(mutateContentPackage) {
   }
 }
 
-test("a complete approved content package reports ready", () => {
+test("a complete content package with release approvals reports ready", () => {
   const report = readReport(runContentCheck(readyPackagePath));
 
   assert.deepEqual(report, {
@@ -80,6 +83,18 @@ test("a package with an extra platform version is not reported ready", () => {
   const report = readReport(runContentCheck(duplicatePlatformVersionPackagePath));
 
   assert.notEqual(report.status, "ready");
+});
+
+test("a null platform version is reported as incomplete", () => {
+  const report = readReport(runContentCheck(nullPlatformVersionPackagePath));
+
+  assert.deepEqual(report.missing, [
+    "platformVersions.xiaohongshu",
+    "platformVersions.douyin",
+    "platformVersions.video-account",
+    "platformVersions.bilibili",
+  ]);
+  assert.equal(report.status, "incomplete");
 });
 
 test("each required content-package detail has an independent incomplete report", async (t) => {
