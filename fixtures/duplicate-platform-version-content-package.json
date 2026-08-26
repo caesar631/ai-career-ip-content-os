@@ -6,6 +6,7 @@
   },
   "platformVersions": [
     { "platform": "xiaohongshu", "releaseApproval": "approved" },
+    { "platform": "xiaohongshu", "releaseApproval": "approved" },
     { "platform": "douyin", "releaseApproval": "approved" },
     { "platform": "video-account", "releaseApproval": "approved" },
     { "platform": "bilibili", "releaseApproval": "approved" }

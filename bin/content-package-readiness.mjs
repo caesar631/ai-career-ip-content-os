@@ -12,17 +12,26 @@ function isReadyContentPackage(contentPackage) {
     hasText(contentPackage.coreTheme?.careerProblem) &&
     hasText(contentPackage.coreTheme?.demonstration) &&
     hasText(contentPackage.coreTheme?.judgement);
-  const hasApprovedPublishTargets = requiredPlatforms.every((platform) =>
-    contentPackage.publishTargets?.some(
-      (target) => target.platform === platform && target.approved === true,
-    ),
-  );
+  const platformVersions = contentPackage.platformVersions ?? [];
+  const hasApprovedPlatformVersions =
+    platformVersions.length === requiredPlatforms.length &&
+    requiredPlatforms.every((platform) =>
+      platformVersions.some(
+      (platformVersion) =>
+        platformVersion.platform === platform && platformVersion.releaseApproval === "approved",
+      ),
+    );
   const hasPublicBasicAsset =
     hasText(contentPackage.basicAsset?.name) &&
     hasText(contentPackage.basicAsset?.reference) &&
     contentPackage.basicAsset?.visibility === "public";
 
-  return hasCompleteCoreTheme && hasApprovedPublishTargets && hasPublicBasicAsset && !contentPackage.paidVideo?.required;
+  return (
+    hasCompleteCoreTheme &&
+    hasApprovedPlatformVersions &&
+    hasPublicBasicAsset &&
+    !contentPackage.paidVideoGenerationBrief?.isRequired
+  );
 }
 
 if (!contentPackagePath) {
@@ -37,7 +46,9 @@ if (!contentPackagePath) {
         status: isReady ? "ready" : "not-ready",
         missing: [],
         awaitingApprovalFor: [],
-        paidVideoGate: contentPackage.paidVideo?.required ? "not-assessed" : "not-required",
+        paidVideoGate: contentPackage.paidVideoGenerationBrief?.isRequired
+          ? "not-assessed"
+          : "not-required",
       }),
     );
   } catch (error) {

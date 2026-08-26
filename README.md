@@ -8,12 +8,12 @@ This repository helps a content owner check whether one core theme is ready to p
 npm run content:check -- fixtures/ready-content-package.json
 ```
 
-A `ready` result currently requires:
+A `ready` result currently requires one content package with:
 
 - a core theme with a career problem, demonstration, and judgement;
-- approved versions for Xiaohongshu, Douyin, Video Account, and Bilibili;
+- exactly one approved platform version for Xiaohongshu, Douyin, Video Account, and Bilibili;
 - one public basic asset with a name and reference; and
-- no paid-video requirement.
+- no required paid-video-generation brief.
 
 The repository also exposes the same public command through `bin/content-package-readiness.mjs`.
 

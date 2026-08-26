@@ -10,6 +10,9 @@ const readyPackagePath = fileURLToPath(
 const incompletePackagePath = fileURLToPath(
   new URL("../fixtures/incomplete-content-package.json", import.meta.url),
 );
+const duplicatePlatformVersionPackagePath = fileURLToPath(
+  new URL("../fixtures/duplicate-platform-version-content-package.json", import.meta.url),
+);
 const contentCheckPath = fileURLToPath(
   new URL("../bin/content-package-readiness.mjs", import.meta.url),
 );
@@ -38,6 +41,12 @@ test("a complete approved content package reports ready", () => {
 
 test("a package missing required content is not reported ready", () => {
   const report = readReport(runContentCheck(incompletePackagePath));
+
+  assert.notEqual(report.status, "ready");
+});
+
+test("a package with an extra platform version is not reported ready", () => {
+  const report = readReport(runContentCheck(duplicatePlatformVersionPackagePath));
 
   assert.notEqual(report.status, "ready");
 });
