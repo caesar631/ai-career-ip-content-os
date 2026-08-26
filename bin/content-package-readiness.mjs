@@ -17,8 +17,8 @@ function isReadyContentPackage(contentPackage) {
     platformVersions.length === requiredPlatforms.length &&
     requiredPlatforms.every((platform) =>
       platformVersions.some(
-      (platformVersion) =>
-        platformVersion.platform === platform && platformVersion.releaseApproval === "approved",
+        (platformVersion) =>
+          platformVersion.platform === platform && platformVersion.releaseApproval === "approved",
       ),
     );
   const hasPublicBasicAsset =
