@@ -298,6 +298,22 @@ test("an incomplete package distinguishes missing and unapproved platform versio
   });
 });
 
+test("a content package resolves multiple blockers in readiness-priority order", async () => {
+  const report = await runModifiedContentPackage((contentPackage) => {
+    delete contentPackage.coreTheme.careerProblem;
+    contentPackage.platformVersions.find(
+      (platformVersion) => platformVersion.platform === "douyin",
+    ).releaseApproval = "pending";
+    contentPackage.paidVideoGenerationBrief = { isRequired: true };
+  });
+
+  assert.equal(report.status, "incomplete");
+  assert.deepEqual(report.nextStep, {
+    action: "complete-content-package",
+    items: ["coreTheme.careerProblem"],
+  });
+});
+
 test("a package with an extra platform version is not reported ready", () => {
   const report = readReport(runContentCheck(duplicatePlatformVersionPackagePath));
 

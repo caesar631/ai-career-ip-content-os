@@ -118,40 +118,55 @@ function assessPaidVideoGenerationBrief(contentPackage) {
   };
 }
 
-function getNextStep({
+function assessReadiness({
   missingContentPackageRequirements,
   paidVideoGenerationBrief,
   platformVersionsAwaitingReleaseApproval,
 }) {
   if (missingContentPackageRequirements.length > 0) {
     return {
-      action: "complete-content-package",
-      items: missingContentPackageRequirements,
+      status: "incomplete",
+      nextStep: {
+        action: "complete-content-package",
+        items: missingContentPackageRequirements,
+      },
     };
   }
 
   if (paidVideoGenerationBrief.status === "incomplete") {
     return {
-      action: "complete-paid-video-generation-brief",
-      items: paidVideoGenerationBrief.missing,
+      status: "blocked-by-paid-video-gate",
+      nextStep: {
+        action: "complete-paid-video-generation-brief",
+        items: paidVideoGenerationBrief.missing,
+      },
     };
   }
 
   if (paidVideoGenerationBrief.status === "awaiting-owner-approval") {
     return {
-      action: "approve-paid-video-generation-brief",
-      items: ["paidVideoGenerationBrief.paidVideoGenerationBriefApproval"],
+      status: "blocked-by-paid-video-gate",
+      nextStep: {
+        action: "approve-paid-video-generation-brief",
+        items: ["paidVideoGenerationBrief.paidVideoGenerationBriefApproval"],
+      },
     };
   }
 
   if (platformVersionsAwaitingReleaseApproval.length > 0) {
     return {
-      action: "approve-platform-versions",
-      items: platformVersionsAwaitingReleaseApproval,
+      status: "awaiting-owner-approval",
+      nextStep: {
+        action: "approve-platform-versions",
+        items: platformVersionsAwaitingReleaseApproval,
+      },
     };
   }
 
-  return { action: "ready-for-owner-release-decision", items: [] };
+  return {
+    status: "ready",
+    nextStep: { action: "ready-for-owner-release-decision", items: [] },
+  };
 }
 
 if (!contentPackagePath) {
@@ -171,28 +186,19 @@ if (!contentPackagePath) {
     const platformVersionsAwaitingReleaseApproval = platformVersionStatuses
       .filter((platformVersion) => platformVersion.status === "awaiting-release-approval")
       .map((platformVersion) => platformVersion.platform);
-    const status =
-      missingContentPackageRequirements.length > 0
-        ? "incomplete"
-        : paidVideoGenerationBrief.status !== "not-required" &&
-            paidVideoGenerationBrief.status !== "approved"
-          ? "blocked-by-paid-video-gate"
-          : platformVersionsAwaitingReleaseApproval.length > 0
-            ? "awaiting-owner-approval"
-            : "ready";
-    const nextStep = getNextStep({
+    const readiness = assessReadiness({
       missingContentPackageRequirements,
       paidVideoGenerationBrief,
       platformVersionsAwaitingReleaseApproval,
     });
     console.log(
       JSON.stringify({
-        status,
+        status: readiness.status,
         missing,
         platformVersionsAwaitingReleaseApproval,
         platformVersionStatuses,
         paidVideoGenerationBriefStatus: paidVideoGenerationBrief.status,
-        nextStep,
+        nextStep: readiness.nextStep,
       }),
     );
   } catch (error) {
