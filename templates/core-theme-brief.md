@@ -44,9 +44,10 @@
 - 需要付费视频：`false`（默认） / `true`
 - 若为 `true`：填写用途、数量、验收标准、成本预估、停止条件，并等待 `paidVideoGenerationBriefApproval: "approved"`。
 
-## 6. 交接与状态
+## 6. 交接与唯一主题阶段记录
 
-- 当前阶段：`inbox` / `research-ready` / `recording-ready` / `recorded` / `draft-ready` / `owner-approval` / `published` / `reviewed`
+- 当前阶段（本主题唯一权威记录）：`inbox` / `research-ready` / `recording-ready` / `recorded` / `draft-ready` / `owner-approval` / `published` / `reviewed`
+- 阶段迁移：只能按上述顺序推进；返工时保留当前阶段，并新增需要补齐的交接物。
 - 下一位工作单元：<研究员/选题编辑/脚本编辑/剪辑简报员/分发编排员/复盘员>
 - 交接文件：<相对路径>
 - 还需要主理人决定什么：<最多一项>
