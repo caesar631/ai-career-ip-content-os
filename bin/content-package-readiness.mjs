@@ -7,6 +7,10 @@ function hasText(value) {
   return typeof value === "string" && value.trim().length > 0;
 }
 
+function isPositiveNumber(value) {
+  return typeof value === "number" && Number.isFinite(value) && value > 0;
+}
+
 function getPlatformVersions(contentPackage) {
   return Array.isArray(contentPackage.platformVersions) ? contentPackage.platformVersions : [];
 }
@@ -69,23 +73,64 @@ function findPlatformVersionsAwaitingReleaseApproval(platformVersions) {
   );
 }
 
+function assessPaidVideoGenerationBrief(contentPackage) {
+  const paidVideoGenerationBrief = contentPackage.paidVideoGenerationBrief;
+  if (!paidVideoGenerationBrief?.isRequired) {
+    return { missing: [], status: "not-required" };
+  }
+
+  const missing = [];
+  if (!hasText(paidVideoGenerationBrief.purpose)) {
+    missing.push("paidVideoGenerationBrief.purpose");
+  }
+  if (!isPositiveNumber(paidVideoGenerationBrief.quantity)) {
+    missing.push("paidVideoGenerationBrief.quantity");
+  }
+  if (!hasText(paidVideoGenerationBrief.acceptanceCriteria)) {
+    missing.push("paidVideoGenerationBrief.acceptanceCriteria");
+  }
+  if (!isPositiveNumber(paidVideoGenerationBrief.costEstimate)) {
+    missing.push("paidVideoGenerationBrief.costEstimate");
+  }
+  if (!hasText(paidVideoGenerationBrief.stopCondition)) {
+    missing.push("paidVideoGenerationBrief.stopCondition");
+  }
+
+  if (missing.length > 0) {
+    return { missing, status: "incomplete" };
+  }
+
+  return {
+    missing: [],
+    status:
+      paidVideoGenerationBrief.ownerApproval === "approved"
+        ? "approved"
+        : "awaiting-owner-approval",
+  };
+}
+
 if (!contentPackagePath) {
   console.error("Provide a content package file path.");
   process.exitCode = 1;
 } else {
   try {
     const contentPackage = JSON.parse(await readFile(contentPackagePath, "utf8"));
-    const missing = findMissingRequirements(contentPackage);
+    const missingContentPackageRequirements = findMissingRequirements(contentPackage);
+    const paidVideoGenerationBrief = assessPaidVideoGenerationBrief(contentPackage);
+    const missing = [
+      ...missingContentPackageRequirements,
+      ...paidVideoGenerationBrief.missing,
+    ];
     const platformVersionsAwaitingReleaseApproval =
-      missing.length === 0
+      missingContentPackageRequirements.length === 0
         ? findPlatformVersionsAwaitingReleaseApproval(getPlatformVersions(contentPackage))
         : [];
-    const paidVideoGenerationIsRequired = contentPackage.paidVideoGenerationBrief?.isRequired;
     const status =
-      missing.length > 0
+      missingContentPackageRequirements.length > 0
         ? "incomplete"
-        : paidVideoGenerationIsRequired
-          ? "not-ready"
+        : paidVideoGenerationBrief.status !== "not-required" &&
+            paidVideoGenerationBrief.status !== "approved"
+          ? "blocked-by-paid-video-gate"
           : platformVersionsAwaitingReleaseApproval.length > 0
             ? "awaiting-owner-approval"
             : "ready";
@@ -94,9 +139,7 @@ if (!contentPackagePath) {
         status,
         missing,
         platformVersionsAwaitingReleaseApproval,
-        paidVideoGenerationBriefStatus: paidVideoGenerationIsRequired
-          ? "not-assessed"
-          : "not-required",
+        paidVideoGenerationBriefStatus: paidVideoGenerationBrief.status,
       }),
     );
   } catch (error) {

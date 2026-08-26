@@ -77,6 +77,70 @@ test("a complete package with unapproved platform versions awaits owner approval
   });
 });
 
+test("a paid-video package without a complete brief is blocked and names the missing fields", async () => {
+  const report = await runModifiedContentPackage((contentPackage) => {
+    contentPackage.paidVideoGenerationBrief = { isRequired: true };
+  });
+
+  assert.deepEqual(report, {
+    status: "blocked-by-paid-video-gate",
+    missing: [
+      "paidVideoGenerationBrief.purpose",
+      "paidVideoGenerationBrief.quantity",
+      "paidVideoGenerationBrief.acceptanceCriteria",
+      "paidVideoGenerationBrief.costEstimate",
+      "paidVideoGenerationBrief.stopCondition",
+    ],
+    platformVersionsAwaitingReleaseApproval: [],
+    paidVideoGenerationBriefStatus: "incomplete",
+  });
+});
+
+test("a complete paid-video brief without owner approval remains blocked", async () => {
+  const report = await runModifiedContentPackage((contentPackage) => {
+    contentPackage.paidVideoGenerationBrief = {
+      isRequired: true,
+      purpose: "Show a workflow outcome that cannot be captured in a screen recording.",
+      quantity: 1,
+      acceptanceCriteria: "The result makes the workflow decision observable.",
+      costEstimate: 80,
+      stopCondition: "Stop after one rejected result.",
+      ownerApproval: "pending",
+    };
+  });
+
+  assert.deepEqual(report, {
+    status: "blocked-by-paid-video-gate",
+    missing: [],
+    platformVersionsAwaitingReleaseApproval: [],
+    paidVideoGenerationBriefStatus: "awaiting-owner-approval",
+  });
+});
+
+test("a complete approved paid-video brief continues to normal readiness checks", async () => {
+  const report = await runModifiedContentPackage((contentPackage) => {
+    contentPackage.paidVideoGenerationBrief = {
+      isRequired: true,
+      purpose: "Show a workflow outcome that cannot be captured in a screen recording.",
+      quantity: 1,
+      acceptanceCriteria: "The result makes the workflow decision observable.",
+      costEstimate: 80,
+      stopCondition: "Stop after one rejected result.",
+      ownerApproval: "approved",
+    };
+    contentPackage.platformVersions.find(
+      (platformVersion) => platformVersion.platform === "video-account",
+    ).releaseApproval = "pending";
+  });
+
+  assert.deepEqual(report, {
+    status: "awaiting-owner-approval",
+    missing: [],
+    platformVersionsAwaitingReleaseApproval: ["video-account"],
+    paidVideoGenerationBriefStatus: "approved",
+  });
+});
+
 test("a package missing required content is not reported ready", () => {
   const report = readReport(runContentCheck(incompletePackagePath));
 
